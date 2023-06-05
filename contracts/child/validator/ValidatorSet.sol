@@ -21,7 +21,7 @@ contract ValidatorSet is IValidatorSet, ERC20SnapshotUpgradeable, System {
     // slither-disable-next-line naming-convention
     uint256 public EPOCH_SIZE;
 
-    uint256 public currentEpochId;
+    uint256 public override currentEpochId;
 
     mapping(uint256 => Epoch) public epochs;
     uint256[] public epochEndBlocks;

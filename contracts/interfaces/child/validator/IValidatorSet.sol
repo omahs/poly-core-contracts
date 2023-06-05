@@ -26,6 +26,8 @@ interface IValidatorSet is IStateReceiver {
     event WithdrawalRegistered(address indexed account, uint256 amount);
     event Withdrawal(address indexed account, uint256 amount);
 
+    function currentEpochId() external view returns (uint256);
+
     /// @notice commits a new epoch
     /// @dev system call
     function commitEpoch(uint256 id, Epoch calldata epoch) external;

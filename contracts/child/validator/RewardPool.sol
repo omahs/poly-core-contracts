@@ -10,6 +10,8 @@ import "../../interfaces/child/validator/IRewardPool.sol";
 contract RewardPool is IRewardPool, System, Initializable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    uint256 private constant PRECISION = 1e18;
+
     IERC20Upgradeable public rewardToken;
     address public rewardWallet;
     IValidatorSet public validatorSet;
@@ -17,6 +19,12 @@ contract RewardPool is IRewardPool, System, Initializable {
 
     mapping(uint256 => uint256) public paidRewardPerEpoch;
     mapping(address => uint256) public pendingRewards;
+
+    uint256 public cumulativeTradingFeesPerToken;
+
+    mapping(address user => uint256 amount) public previousCumulatedRewardPerToken;
+
+    event TradingFeesPaid(address indexed user, uint256 amount);
 
     function initialize(
         address newRewardToken,
@@ -36,12 +44,35 @@ contract RewardPool is IRewardPool, System, Initializable {
     }
 
     /**
+     * @dev Distributes trading rewards to the reward wallet, keeping track of total trading rewards per unit of staked balance.
+     */
+    function distributeTradingFees(uint256 tradingFees, uint256 epochId) internal {
+        uint256 totalSupply = validatorSet.totalSupplyAt(epochId);
+        if (totalSupply == 0) {
+            return;
+        }
+        uint256 newTradingFeesPerStakedUnit = (tradingFees * PRECISION) / totalSupply;
+        cumulativeTradingFeesPerToken += newTradingFeesPerStakedUnit;
+
+        // We do not transfer tradingFees tokens to the reward wallet here, because we do it at the end of `distributeRewardFor`.
+    }
+
+    /**
      * @inheritdoc IRewardPool
      */
-    function distributeRewardFor(uint256 epochId, Uptime[] calldata uptime) external onlySystemCall {
+    function distributeRewardFor(
+        uint256 epochId,
+        Uptime[] calldata uptime,
+        uint256 tradingFees
+    ) external onlySystemCall {
         require(paidRewardPerEpoch[epochId] == 0, "REWARD_ALREADY_DISTRIBUTED");
         uint256 totalBlocks = validatorSet.totalBlocks(epochId);
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
+
+        if (tradingFees > 0) {
+            distributeTradingFees(tradingFees, epochId);
+        }
+
         uint256 epochSize = validatorSet.EPOCH_SIZE();
         // slither-disable-next-line divide-before-multiply
         uint256 reward = (baseReward * totalBlocks) / epochSize;
@@ -60,8 +91,22 @@ contract RewardPool is IRewardPool, System, Initializable {
             totalReward += validatorReward;
         }
         paidRewardPerEpoch[epochId] = totalReward;
-        _transferRewards(totalReward);
+        _transferRewards(totalReward + tradingFees);
         emit RewardDistributed(epochId, totalReward);
+    }
+
+    function claimTradingFees() external {
+        uint256 _cumulativeRewardPerToken = cumulativeTradingFeesPerToken;
+        uint256 stakedAmount = validatorSet.balanceOfAt(msg.sender, validatorSet.currentEpochId());
+        uint256 accountReward = (stakedAmount *
+            (_cumulativeRewardPerToken - previousCumulatedRewardPerToken[msg.sender])) / PRECISION;
+
+        previousCumulatedRewardPerToken[msg.sender] = _cumulativeRewardPerToken;
+
+        if (accountReward > 0) {
+            rewardToken.safeTransfer(msg.sender, accountReward);
+            emit TradingFeesPaid(msg.sender, accountReward);
+        }
     }
 
     /**

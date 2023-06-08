@@ -44,7 +44,7 @@ interface ICustomSupernetManager {
 
     /// @notice Withdraws slashed MATIC of slashed validators
     /// @dev only callable by owner
-    function withdrawSlashedStake(address to) external;
+    function withdrawSlashedStake(address to, address _token) external;
 
     /// @notice called by the exit helpers to either release the stake of a validator or slash it
     /// @dev can only be synced from child after genesis

@@ -20,7 +20,8 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
 
     IBLS private bls;
     IStateSender private stateSender;
-    IERC20 private matic;
+    // Mapping of address of token to boolean indicating whether the token is supported by this chain.
+    mapping(address => bool) private stakingTokens;
     address private childValidatorSet;
     address private exitHelper;
 
@@ -34,11 +35,22 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
         _;
     }
 
+    /**
+     *
+     * @param newStakeManager  Address of stake manager contract
+     * @param newBls           TODO what is this for?
+     * @param newStateSender   Address of state sender contract
+     * @param initialTokenList Staking tokens allows for this chain
+     * @param newChildValidatorSet TODO what is this for?
+     * @param newExitHelper    TODO what is this for?
+     * @param newDomain        TODO what is this for?
+     */
+
     function initialize(
         address newStakeManager,
         address newBls,
         address newStateSender,
-        address newMatic,
+        address[] calldata initialTokenList,
         address newChildValidatorSet,
         address newExitHelper,
         string memory newDomain
@@ -47,19 +59,27 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
             newStakeManager != address(0) &&
                 newBls != address(0) &&
                 newStateSender != address(0) &&
-                newMatic != address(0) &&
                 newChildValidatorSet != address(0) &&
                 newExitHelper != address(0) &&
                 bytes(newDomain).length != 0,
             "INVALID_INPUT"
         );
+
         __SupernetManager_init(newStakeManager);
         bls = IBLS(newBls);
         stateSender = IStateSender(newStateSender);
-        matic = IERC20(newMatic);
         childValidatorSet = newChildValidatorSet;
         exitHelper = newExitHelper;
         domain = keccak256(abi.encodePacked(newDomain));
+
+        // TODO should pass in the ExchangeRate interface, and then validate that the token is supported
+        // TODO by the overall system
+        for (uint256 i = 0; i < initialTokenList.length; i++) {
+            address token = initialTokenList[i];
+            require(token != address(0), "INVALID_INPUT");
+            stakingTokens[token] = true;
+        }
+
         __Ownable2Step_init();
     }
 
@@ -107,9 +127,9 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
     /**
      * @inheritdoc ICustomSupernetManager
      */
-    function withdrawSlashedStake(address to) external onlyOwner {
-        uint256 balance = matic.balanceOf(address(this));
-        matic.safeTransfer(to, balance);
+    function withdrawSlashedStake(address to, address token) external onlyOwner {
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(to, balance);
     }
 
     /**
@@ -141,7 +161,12 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
         return validators[validator_];
     }
 
+    // TODO need to take validator and staker
+    // Note: amount is based token
     function _onStake(address validator, uint256 amount) internal override onlyValidator(validator) {
+        // TODO record who has staked what
+
+        // TODO better understand what code below is doing
         if (_genesis.gatheringGenesisValidators()) {
             _genesis.insert(validator, amount);
         } else if (_genesis.completed()) {
@@ -152,8 +177,9 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
     }
 
     function _unstake(address validator, uint256 amount) internal {
+        // TODO need to remove address(0)
         // slither-disable-next-line reentrancy-benign,reentrancy-events
-        stakeManager.releaseStakeOf(validator, amount);
+        stakeManager.releaseStakeOf(validator, address(0), amount);
         _removeIfValidatorUnstaked(validator);
     }
 

@@ -57,10 +57,10 @@ returns the child chain manager contract for a child chain
 ### registerChildChain
 
 ```solidity
-function registerChildChain(address manager) external nonpayable returns (uint256 id)
+function registerChildChain(address _manager) external nonpayable returns (uint256 _id)
 ```
 
-registers a new child chain with the staking contract
+registers a new child chain with the staking contract Note: Anyone can register a child chain. Attackers registering child chains that are never used is not an attack.
 
 
 
@@ -68,18 +68,18 @@ registers a new child chain with the staking contract
 
 | Name | Type | Description |
 |---|---|---|
-| manager | address | undefined |
+| _manager | address | Child chain / supernet manager |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| id | uint256 | of the child chain |
+| _id | uint256 | of the child chain |
 
 ### releaseStakeOf
 
 ```solidity
-function releaseStakeOf(address validator, uint256 amount) external nonpayable
+function releaseStakeOf(address _validator, address _token, uint256 _amount) external nonpayable
 ```
 
 called by child manager contract to release a validator&#39;s stake
@@ -90,8 +90,9 @@ called by child manager contract to release a validator&#39;s stake
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
-| amount | uint256 | undefined |
+| _validator | address | undefined |
+| _token | address | undefined |
+| _amount | uint256 | undefined |
 
 ### slashStakeOf
 
@@ -113,10 +114,10 @@ called by child manager contract to slash a validator&#39;s stakemanager collect
 ### stakeFor
 
 ```solidity
-function stakeFor(uint256 id, uint256 amount) external nonpayable
+function stakeFor(uint256 _id, address _validator, address _token, uint256 _amount) external nonpayable
 ```
 
-called by a validator to stake for a child chain
+called by a staker to stake for a child chain
 
 
 
@@ -124,8 +125,10 @@ called by a validator to stake for a child chain
 
 | Name | Type | Description |
 |---|---|---|
-| id | uint256 | undefined |
-| amount | uint256 | undefined |
+| _id | uint256 | undefined |
+| _validator | address | undefined |
+| _token | address | undefined |
+| _amount | uint256 | undefined |
 
 ### stakeOf
 
@@ -214,7 +217,7 @@ returns the total amount staked for a child chain
 ### withdrawStake
 
 ```solidity
-function withdrawStake(address to, uint256 amount) external nonpayable
+function withdrawStake(address _to, address _token, uint256 _amount) external nonpayable
 ```
 
 allows a validator to withdraw released stake
@@ -225,8 +228,9 @@ allows a validator to withdraw released stake
 
 | Name | Type | Description |
 |---|---|---|
-| to | address | undefined |
-| amount | uint256 | undefined |
+| _to | address | undefined |
+| _token | address | undefined |
+| _amount | uint256 | undefined |
 
 ### withdrawableStake
 
@@ -274,7 +278,7 @@ event ChildManagerRegistered(uint256 indexed id, address indexed manager)
 ### StakeAdded
 
 ```solidity
-event StakeAdded(uint256 indexed id, address indexed validator, uint256 amount)
+event StakeAdded(uint256 indexed id, address indexed _staker, address indexed validator, address _token, uint256 amount)
 ```
 
 
@@ -286,13 +290,15 @@ event StakeAdded(uint256 indexed id, address indexed validator, uint256 amount)
 | Name | Type | Description |
 |---|---|---|
 | id `indexed` | uint256 | undefined |
+| _staker `indexed` | address | undefined |
 | validator `indexed` | address | undefined |
+| _token  | address | undefined |
 | amount  | uint256 | undefined |
 
 ### StakeRemoved
 
 ```solidity
-event StakeRemoved(uint256 indexed id, address indexed validator, uint256 amount)
+event StakeRemoved(uint256 indexed id, address indexed validator, address _token, uint256 amount)
 ```
 
 
@@ -305,12 +311,13 @@ event StakeRemoved(uint256 indexed id, address indexed validator, uint256 amount
 |---|---|---|
 | id `indexed` | uint256 | undefined |
 | validator `indexed` | address | undefined |
+| _token  | address | undefined |
 | amount  | uint256 | undefined |
 
 ### StakeWithdrawn
 
 ```solidity
-event StakeWithdrawn(address indexed validator, address indexed recipient, uint256 amount)
+event StakeWithdrawn(address indexed validator, address indexed recipient, address _token, uint256 amount)
 ```
 
 
@@ -323,12 +330,13 @@ event StakeWithdrawn(address indexed validator, address indexed recipient, uint2
 |---|---|---|
 | validator `indexed` | address | undefined |
 | recipient `indexed` | address | undefined |
+| _token  | address | undefined |
 | amount  | uint256 | undefined |
 
 ### ValidatorSlashed
 
 ```solidity
-event ValidatorSlashed(uint256 indexed id, address indexed validator, uint256 amount)
+event ValidatorSlashed(uint256 indexed id, address indexed validator, address _token, uint256 amount)
 ```
 
 
@@ -341,6 +349,7 @@ event ValidatorSlashed(uint256 indexed id, address indexed validator, uint256 am
 |---|---|---|
 | id `indexed` | uint256 | undefined |
 | validator `indexed` | address | undefined |
+| _token  | address | undefined |
 | amount  | uint256 | undefined |
 
 

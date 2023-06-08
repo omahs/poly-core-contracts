@@ -125,7 +125,7 @@ Allows to whitelist validators that are allowed to stake
 ### withdrawSlashedStake
 
 ```solidity
-function withdrawSlashedStake(address to) external nonpayable
+function withdrawSlashedStake(address to, address _token) external nonpayable
 ```
 
 Withdraws slashed MATIC of slashed validators
@@ -137,6 +137,7 @@ Withdraws slashed MATIC of slashed validators
 | Name | Type | Description |
 |---|---|---|
 | to | address | undefined |
+| _token | address | undefined |
 
 
 

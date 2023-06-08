@@ -3,13 +3,16 @@ pragma solidity 0.8.19;
 
 struct ChildChains {
     uint256 counter;
+    // Mapping id to address of manager
     mapping(uint256 => address) managers;
+    // Mapping address of manager to id
     mapping(address => uint256) ids;
 }
 
 library ChildManagerLib {
     function registerChild(ChildChains storage self, address manager) internal returns (uint256 id) {
-        assert(manager != address(0));
+        require(manager != address(0), "Manager address is 0");
+        require(self.ids[manager] == 0, "Child chain already registered");
         id = ++self.counter;
         self.managers[id] = manager;
         self.ids[manager] = id;

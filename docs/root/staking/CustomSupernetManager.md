@@ -136,7 +136,7 @@ function id() external view returns (uint256)
 ### initialize
 
 ```solidity
-function initialize(address newStakeManager, address newBls, address newStateSender, address newMatic, address newChildValidatorSet, address newExitHelper, string newDomain) external nonpayable
+function initialize(address newStakeManager, address newBls, address newStateSender, address[] initialTokenList, address newChildValidatorSet, address newExitHelper, string newDomain) external nonpayable
 ```
 
 
@@ -147,13 +147,13 @@ function initialize(address newStakeManager, address newBls, address newStateSen
 
 | Name | Type | Description |
 |---|---|---|
-| newStakeManager | address | undefined |
-| newBls | address | undefined |
-| newStateSender | address | undefined |
-| newMatic | address | undefined |
-| newChildValidatorSet | address | undefined |
-| newExitHelper | address | undefined |
-| newDomain | string | undefined |
+| newStakeManager | address | Address of stake manager contract |
+| newBls | address | TODO what is this for? |
+| newStateSender | address | Address of state sender contract |
+| initialTokenList | address[] | Staking tokens allows for this chain |
+| newChildValidatorSet | address | TODO what is this for? |
+| newExitHelper | address | TODO what is this for? |
+| newDomain | string | TODO what is this for? |
 
 ### onInit
 
@@ -327,7 +327,7 @@ Allows to whitelist validators that are allowed to stake
 ### withdrawSlashedStake
 
 ```solidity
-function withdrawSlashedStake(address to) external nonpayable
+function withdrawSlashedStake(address to, address token) external nonpayable
 ```
 
 Withdraws slashed MATIC of slashed validators
@@ -339,6 +339,7 @@ Withdraws slashed MATIC of slashed validators
 | Name | Type | Description |
 |---|---|---|
 | to | address | undefined |
+| token | address | undefined |
 
 
 

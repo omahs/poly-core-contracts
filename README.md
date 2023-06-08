@@ -1,4 +1,13 @@
-# Core Contracts
+# Validator and Staking Related Contracts
+
+This is a fork of Polygon's core-contracts repo. It manages a staking, validation and
+crosschain communications between child chains and the root chain.
+
+Changes relative to Polygon's repo:
+
+- Delegted Proof of Stake (DPoS): Allow accounts staking to be different to validator accounts.
+
+# Polygon Core Contracts
 
 [![Solidity CI](https://github.com/maticnetwork/v3-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/maticnetwork/v3-contracts/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/maticnetwork/v3-contracts/badge.svg?branch=main&t=ZTUm69)](https://coveralls.io/github/maticnetwork/v3-contracts?branch=main)

@@ -77,7 +77,7 @@ returns the child chain manager contract for a child chain
 function registerChildChain(address _manager) external nonpayable returns (uint256 id)
 ```
 
-TODO can&#39;t find IStakeManager  inheritdoc IStakeManager
+registers a new child chain with the staking contract Note: Anyone can register a child chain. Attackers registering child chains that are never used is not an attack.
 
 
 
@@ -85,13 +85,13 @@ TODO can&#39;t find IStakeManager  inheritdoc IStakeManager
 
 | Name | Type | Description |
 |---|---|---|
-| _manager | address | undefined |
+| _manager | address | Child chain / supernet manager |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| id | uint256 | undefined |
+| id | uint256 | of the child chain |
 
 ### releaseStakeOf
 

@@ -31,7 +31,14 @@ interface IStakeManager {
      */
     function registerChildChain(address _manager) external returns (uint256 _id);
 
-    /// @notice called by a staker to stake for a child chain
+    /**
+     * @notice called by a staker to stake for a child chain. That is, msg.sender is the staker.
+     *
+     * @param _id Child chain identifier.
+     * @param _validator Validator to allocate stake to.
+     * @param _token ERC 20 token to stake.
+     * @param _amount Number of tokens to stake.
+     */
     function stakeFor(uint256 _id, address _validator, address _token, uint256 _amount) external;
 
     /// @notice called by child manager contract to release a validator's stake

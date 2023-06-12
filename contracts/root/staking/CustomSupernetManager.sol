@@ -20,8 +20,14 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
 
     IBLS private bls;
     IStateSender private stateSender;
-    // Mapping of address of token to boolean indicating whether the token is supported by this chain.
-    mapping(address => bool) private stakingTokens;
+
+    // Staking token support.
+    // Are tokens supported?
+    // Map (address of token => boolean indicating whether the token is supported by this chain)
+    mapping(address => bool) private stakingTokensMap;
+    // List of staking tokens
+    address[] private stakingTokensList;
+
     address private childValidatorSet;
     address private exitHelper;
 
@@ -76,8 +82,10 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
         // TODO by the overall system
         for (uint256 i = 0; i < initialTokenList.length; i++) {
             address token = initialTokenList[i];
-            require(token != address(0), "INVALID_INPUT");
-            stakingTokens[token] = true;
+            require(token != address(0), "Token list: 0 token address");
+            require(stakingTokensMap[token] == false, "Token list: duplicate token");
+            stakingTokensList.push(token);
+            stakingTokensMap[token] = true;
         }
 
         __Ownable2Step_init();
@@ -154,11 +162,29 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
     }
 
     /**
-     *
      * @inheritdoc ICustomSupernetManager
      */
     function getValidator(address validator_) external view returns (Validator memory) {
         return validators[validator_];
+    }
+
+    /**
+     * @inheritdoc ICustomSupernetManager
+     */
+    function stakingTokenSupported(address _token) external view returns (bool) {
+        return stakingTokensMap[_token];
+    }
+
+    /**
+     * @inheritdoc ICustomSupernetManager
+     */
+    function getListOfStakingTokens() public view returns (address[] memory) {
+        uint256 len = stakingTokensList.length;
+        address[] memory supportedTokens = new address[](len);
+        for (uint256 i = 0; i < len; i++) {
+            supportedTokens[i] = stakingTokensList[i];
+        }
+        return supportedTokens;
     }
 
     // TODO need to take validator and staker
@@ -184,7 +210,8 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
     }
 
     function _slash(address validator) internal {
-        uint256 stake = stakeManager.stakeOf(validator, id);
+        address[] memory tokens = getListOfStakingTokens();
+        uint256 stake = stakeManager.stakeOfValidatorNormalised(validator, id, tokens);
         uint256 slashedAmount = (stake * SLASHING_PERCENTAGE) / 100;
         // slither-disable-next-line reentrancy-benign,reentrancy-events
         stakeManager.slashStakeOf(validator, slashedAmount);
@@ -220,7 +247,7 @@ contract CustomSupernetManager is ICustomSupernetManager, Ownable2StepUpgradeabl
     }
 
     function _removeIfValidatorUnstaked(address validator) internal {
-        if (stakeManager.stakeOf(validator, id) == 0) {
+        if (stakeManager.isStakeOfValidatorZero(validator, id, getListOfStakingTokens())) {
             validators[validator].isActive = false;
             emit ValidatorDeactivated(validator);
         }

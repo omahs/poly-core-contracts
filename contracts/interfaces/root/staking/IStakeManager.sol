@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "../../../interfaces/root/staking/ISupernetManager.sol";
+import "../../../interfaces/root/staking/ICustomSupernetManager.sol";
 
 /**
     @title IStakeManager
-    @author Polygon Technology (@gretzke)
+    @author Polygon Technology (@gretzke) / and significantly reworked by Peter Robinson 
     @notice Manages stakes for all child chains
  */
 interface IStakeManager {
@@ -51,28 +51,89 @@ interface IStakeManager {
     /// @notice manager collects slashed amount
     function slashStakeOf(address validator, uint256 amount) external;
 
+    /**
+     * Indicate if a validator is registered for a child chain.
+     *
+     * @param _id Child chain id.
+     * @param _validator Address of validator.
+     */
+    function isValidatorRegistered(uint256 _id, address _validator) external view returns (bool);
+
     /// @notice returns the amount of stake a validator can withdraw
     // TODO needs to return an array of (token, amount)
     function withdrawableStake(address validator) external view returns (uint256 amount);
 
-    /// @notice returns the total amount staked for all child chains
-    // TODO needs to return array of (token, amount)
-    function totalStake() external view returns (uint256 amount);
+    /**
+     * @notice returns the total number of tokens of a particular type staked for a child chain.
+     * @dev This function will revert if the token is not supported by the child chain.
+     *
+     * @param _id Child chain Id
+     * @param _token Token to get total for.
+     * @return Number of tokens staked on the child chain.
+     */
+    function totalStakeOfChild(uint256 _id, address _token) external view returns (uint256);
 
-    /// @notice returns the total amount staked for a child chain
-    // TODO needs to return array of (token, amount)
-    function totalStakeOfChild(uint256 id) external view returns (uint256 amount);
+    /**
+     * @notice returns the number of tokens staked by a particular staker.
+     *
+     * @param _staker Staker's address.
+     * @param _token Token to get total for.
+     * @return Number of tokens staked on the child chain.
+     */
+    function stakeOf(address _staker, address _token) external view returns (uint256);
 
-    /// @notice returns the total amount staked of a validator for all child chains
-    // TODO needs to return array of (token, amount)
-    function totalStakeOf(address validator) external view returns (uint256 amount);
+    /**
+     * @notice returns the number of tokens allocated to a validator on a particular child chain.
+     * @dev This function will revert if the token is not supported by the child chain.
+     *
+     * @param _validator Address of validator to get total for.
+     * @param _id Child chain Id.
+     * @param _token Token to get total for.
+     * @return Number of tokens staked on the child chain.
+     */
+    function stakeOfValidator(address _validator, uint256 _id, address _token) external view returns (uint256);
 
-    /// @notice returns the amount staked by a validator for a child chain
-    // TODO needs to return array of (token, amount)
-    function stakeOf(address validator, uint256 id) external view returns (uint256 amount);
+    /**
+     * @notice returns the number of tokens allocated to a validator on a particular child chain
+     *  demoninated in the base token.
+     *
+     * @param _validator Address of validator to get total for.
+     * @param _id Child chain Id.
+     * @param _tokens Array of tokens supported by the child chain.
+     * @return Number of tokens staked on the child chain.
+     */
+    function stakeOfValidatorNormalised(
+        address _validator,
+        uint256 _id,
+        address[] memory _tokens
+    ) external view returns (uint256);
+
+    /**
+     * @notice returns the stakers that have allocated tokens to a validator on a child chain.
+     * @dev This function will revert if the token is not supported by the child chain.
+     *
+     * @param _validator Address of validator to get total for.
+     * @param _id Child chain Id.
+     * @return Number of tokens staked on the child chain.
+     */
+    function stakersForValidator(address _validator, uint256 _id) external view returns (address[] memory);
+
+    /**
+     * @notice Indicates if a validator no longer has any stake allocated to it
+     *
+     * @param _validator Address of validator to get total for.
+     * @param _id Child chain Id.
+     * @param _tokens Array of tokens supported by the child chain.
+     * @return true if the validators stake is zero
+     */
+    function isStakeOfValidatorZero(
+        address _validator,
+        uint256 _id,
+        address[] memory _tokens
+    ) external view returns (bool);
 
     /// @notice returns the child chain manager contract for a child chain
-    function managerOf(uint256 id) external view returns (ISupernetManager manager);
+    function managerOf(uint256 id) external view returns (ICustomSupernetManager manager);
 
     /// @notice returns the child id for a child chain manager contract
     function idFor(address manager) external view returns (uint256 id);

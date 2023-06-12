@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../interfaces/root/staking/IExchangeRate.sol";
 import "../../interfaces/root/staking/IStakeManager.sol";
+import "../../interfaces/root/staking/ISupernetManager.sol";
 import "./StakeManagerData.sol";
 import "./StakeManagerChildChainData.sol";
 
@@ -15,7 +16,7 @@ import "./StakeManagerChildChainData.sol";
  * Notes:
  * * This is an upgradable contract.
  */
-contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeManager, Initializable {
+contract StakeManager is IStakeManager, StakeManagerData, StakeManagerChildChainData, Initializable {
     using SafeERC20 for IERC20;
 
     address private baseStakingToken;
@@ -41,6 +42,8 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
 
     /**
      * TODO add to  IStakeManager
+     * Regster a validator, associate the validator with a staking address, and stake some value. 
+
      */
     function registerValidatorAndStake(
         uint256 _id,
@@ -53,7 +56,7 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
 
         // TODO will there be a separate minimum stake for validators?
 
-        // TODO registerValidator(msg.sender, _validator);
+        registerValidatorInternal(_id, _validator);
 
         stakeFor(_id, _validator, _token, _amount);
     }
@@ -80,7 +83,7 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
         //        addStake(msg.sender, _validator, _id, _token, _amount);
 
         // Communicate the staking change to the child chain.
-        ISupernetManager manager = ISupernetManager(managerOfInternal(_id));
+        ICustomSupernetManager manager = managerOf(_id);
         manager.onStake(_validator, baseTokenAmount);
         // slither-disable-next-line reentrancy-events
         emit StakeAdded(_id, msg.sender, _validator, _token, _amount);
@@ -92,7 +95,7 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
      */
     function releaseStakeOf(address _validator, address _token, uint256 _amount) external {
         // NOTE: idFor ensures can only be called by supernet / chain manager.
-        uint256 id = idForInternal(msg.sender);
+        uint256 id = idFor(msg.sender);
 
         // TODO removeStake(_validator, id, _amount);
         // TODO upgrade lib to handle tokens
@@ -114,12 +117,17 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
      */
     function slashStakeOf(address _validator, uint256 _amount) external {
         // NOTE: idFor ensures can only be called by supernet / chain manager.
-        uint256 id = idForInternal(msg.sender);
+        uint256 id = idFor(msg.sender);
 
-        // TODO  work out which token(s) for which staker(s) to slash
+        // TODO  Determine the common list of tokens that the validator and staker support
+        // TODO slash evenly across the commonly staked tokens.
+        // TODO **** How to determine how much of each token to slash.
         address token = address(0);
 
-        uint256 stake = stakeOf(_validator, id);
+        // TODO determine stakers associated with a validator
+        // TODO slash them equally
+
+        uint256 stake = stakeOf(_validator, token);
         if (_amount > stake) _amount = stake;
         // TODO removeStake(_validator, id, stake);
         _withdrawStake(_validator, msg.sender, token, _amount);
@@ -135,57 +143,6 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
         //_amount = withdrawableStakeOf(stakes, _validator);
     }
 
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function totalStake() external view returns (uint256) {
-        // TODO is this function needed????
-
-        // _amount = stakes.totalStake;
-        return 0;
-    }
-
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function totalStakeOfChild(uint256 _id) external view returns (uint256) {
-        // TODO
-        // _amount = totalStakeOfChild(stakes, _id);
-        return 0;
-    }
-
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function totalStakeOf(address _validator) external view returns (uint256) {
-        // TODO
-        // _amount = totalStakeOf(stakes, _validator);
-        return 0;
-    }
-
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function stakeOf(address _validator, uint256 _id) public view returns (uint256) {
-        // TODO
-        //_amount = stakeOf(_validator, _token, _id);
-        return 0;
-    }
-
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function managerOf(uint256 _id) public view returns (ISupernetManager _manager) {
-        _manager = ISupernetManager(managerOfInternal(_id));
-    }
-
-    /**
-     * @inheritdoc IStakeManager
-     */
-    function idFor(address _manager) public view returns (uint256 _id) {
-        _id = idForInternal(_manager);
-    }
-
     function _withdrawStake(address _validator, address _to, address _token, uint256 _amount) private {
         // TODO withdrawStake(_validator, _token, _amount);
         // TODO update stakes lib to handle token addresses
@@ -193,5 +150,22 @@ contract StakeManager is StakeManagerData, StakeManagerChildChainData, IStakeMan
         // slither-disable-next-line reentrancy-events
         IERC20(_token).safeTransfer(_to, _amount);
         emit StakeWithdrawn(_validator, _to, _token, _amount);
+    }
+
+    function stakeOfValidatorNormalised(
+        address _validator,
+        uint256 _id,
+        address[] memory _tokens
+    ) external view returns (uint256) {
+        uint256 baseTokenAmount;
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            address token = _tokens[i];
+            uint256 amount = stakeOfValidator(_validator, _id, token);
+            if (token != baseStakingToken) {
+                amount = exchangeRate.convert(token, amount);
+            }
+            baseTokenAmount += amount;
+        }
+        return baseTokenAmount;
     }
 }

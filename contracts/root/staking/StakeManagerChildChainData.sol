@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import "../../interfaces/root/staking/IStakeManager.sol";
+
 /*
  * Holds the mapping between CustomSupernetManager contract address and
  * child chain id.
  *
  * NOTE: In Polygon's core-contracts repo, this contract is ChildChainLib.sol
  */
-abstract contract StakeManagerChildChainData {
+abstract contract StakeManagerChildChainData is IStakeManager {
     // Counter that determines the next child chain id.
     uint256 private childChainCounter;
     // Mapping id to address of manager
@@ -37,15 +39,23 @@ abstract contract StakeManagerChildChainData {
         }
     }
 
-    function managerOfInternal(uint256 _id) internal view returns (address _manager) {
-        _manager = childChainManagers[_id];
+    /**
+     * @inheritdoc IStakeManager
+     */
+    function managerOf(uint256 _id) public view returns (ICustomSupernetManager) {
+        address manager = childChainManagers[_id];
         // TODO switch to Error
-        require(_manager != address(0), "Invalid id");
+        require(manager != address(0), "Invalid id");
+        return ICustomSupernetManager(manager);
     }
 
-    function idForInternal(address _manager) internal view returns (uint256 _id) {
-        _id = childChainIds[_manager];
+    /**
+     * @inheritdoc IStakeManager
+     */
+    function idFor(address _manager) public view returns (uint256) {
+        uint256 id = childChainIds[_manager];
         // TODO switch to Error
-        require(_id != 0, "Invalid manager");
+        require(id != 0, "Invalid manager");
+        return id;
     }
 }

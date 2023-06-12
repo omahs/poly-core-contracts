@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import "../../interfaces/root/staking/IStakeManager.sol";
+import "../../interfaces/root/staking/ICustomSupernetManager.sol";
+
 /*
  * Code and state to operate on staking information on root chain.
  *
  * NOTE: In Polygon's core-contracts repo, this contract is StakeManagerLib.sol
  */
-abstract contract StakeManagerData {
+abstract contract StakeManagerData is IStakeManager {
     // Mapping validator address to staker address
     mapping(bytes32 => address) private validatorLinkedStaker;
     // Mapping staker address to validator address
@@ -35,14 +38,6 @@ abstract contract StakeManagerData {
     // Map of chain id to map of validators to array of stakers for the validator for that chain
     // child chain => validator => stakers
     mapping(uint256 => mapping(address => address[])) private validatorStakers;
-
-    // hash(child, validator) =>
-
-    // child chain => total stake
-    //mapping(uint256 => uint256) private totalStakePerChild;
-
-    // TODO what is this needed for?
-    //mapping(address => uint256) private totalStakes;
 
     // Mapping (staker => token => amount)
     mapping(address => mapping(address => uint256)) withdrawableStakes;
@@ -75,7 +70,7 @@ abstract contract StakeManagerData {
      * @param _id Child chain id.
      * @param _validator Address of a validator.
      */
-    function registerValidator(uint256 _id, address _validator) internal {
+    function registerValidatorInternal(uint256 _id, address _validator) internal {
         address staker = msg.sender;
         bytes32 idValidator = keccak256(abi.encodePacked(_id, _validator));
         bytes32 idStaker = keccak256(abi.encodePacked(_id, staker));
@@ -114,9 +109,6 @@ abstract contract StakeManagerData {
     //     addStake(_self, _staker, _token, _amount);
     //     restake(_self, _staker, _token, _id, _validator);
 
-    //     // _self.totalStakePerChild[_id] += _amount;
-    //     // _self.totalStakes[_validator] += _amount;
-    //     // _self.totalStake += _amount;
     // }
 
     /**
@@ -238,6 +230,7 @@ abstract contract StakeManagerData {
      * Return information about which validators have what stake allocated to them.
      *
      * @param _id Child chain id.
+     * @return amount of stake as array: [supported token index][validator address]
      */
     function gatherStake(
         uint256 _id,
@@ -264,22 +257,83 @@ abstract contract StakeManagerData {
         return stakedValue;
     }
 
+    /**
+     * @inheritdoc IStakeManager
+     */
+    function isValidatorRegistered(uint256 _id, address _validator) public view override returns (bool) {
+        bytes32 idValidator = keccak256(abi.encodePacked(_id, _validator));
+        address staker = validatorLinkedStaker[idValidator];
+        return staker != address(0);
+    }
+
     function withdrawableStakeOf(address _token) internal view returns (uint256) {
         return withdrawableStakes[msg.sender][_token];
     }
 
-    // function totalStakeOfChild(uint256 id) internal view returns (uint256 amount) {
-    //     amount = totalStakePerChild[id];
-    // }
+    function totalStakeOfChild(uint256 _id, address _token) external view returns (uint256) {
+        ICustomSupernetManager childChainManager = this.managerOf(_id);
+        require(childChainManager.stakingTokenSupported(_token), "Token not supported by child");
 
-    //    function stakeOf(Stakes storage self, address validator, uint256 id) internal view returns (uint256 amount) {
-    function stakeOfInternal(address, uint256) internal pure returns (uint256 amount) {
-        // TODO
-        //        amount = stakes[validator][id];
-        amount = 0;
+        uint256 amount;
+        uint256 numValidators = validators[_id].length;
+
+        for (uint256 i = 0; i < numValidators; i++) {
+            address validator = validators[_id][i];
+            uint256 numberOfStakers = validatorStakers[_id][validator].length;
+            for (uint256 j = 0; j < numberOfStakers; j++) {
+                address staker = validatorStakers[_id][validator][j];
+                amount += stakes[staker][_token];
+            }
+        }
+
+        return amount;
     }
 
-    // function totalStakeOf(address validator) internal view returns (uint256 amount) {
-    //     amount = totalStakes[validator];
-    // }
+    function stakeOf(address _staker, address _token) public view returns (uint256) {
+        return stakes[_staker][_token];
+    }
+
+    function stakeOfValidator(address _validator, uint256 _id, address _token) public view override returns (uint256) {
+        ICustomSupernetManager childChainManager = this.managerOf(_id);
+        require(childChainManager.stakingTokenSupported(_token), "Token not supported by child");
+
+        uint256 amount;
+        uint256 numberOfStakers = validatorStakers[_id][_validator].length;
+        for (uint256 i = 0; i < numberOfStakers; i++) {
+            address staker = validatorStakers[_id][_validator][i];
+            amount += stakes[staker][_token];
+        }
+        return amount;
+    }
+
+    function isStakeOfValidatorZero(
+        address _validator,
+        uint256 _id,
+        address[] memory _tokens
+    ) external view override returns (bool) {
+        uint256 numberOfStakers = validatorStakers[_id][_validator].length;
+        for (uint256 i = 0; i < numberOfStakers; i++) {
+            address staker = validatorStakers[_id][_validator][i];
+            for (uint256 j = 0; j < _tokens.length; j++) {
+                if (stakes[staker][_tokens[j]] != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function stakersForValidator(address _validator, uint256 _id) external view override returns (address[] memory) {
+        uint256 numberOfStakers = validatorStakers[_id][_validator].length;
+        address[] memory stakers = new address[](numberOfStakers);
+        for (uint256 i = 0; i < numberOfStakers; i++) {
+            stakers[i] = validatorStakers[_id][_validator][i];
+        }
+        return stakers;
+    }
+
+    function getTokensSupportedByChildChain(uint256 _id) private view returns (address[] memory) {
+        ICustomSupernetManager childChainManager = this.managerOf(_id);
+        return childChainManager.getListOfStakingTokens();
+    }
 }

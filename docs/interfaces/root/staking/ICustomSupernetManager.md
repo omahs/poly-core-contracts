@@ -49,6 +49,23 @@ returns the genesis validator set with their balances
 |---|---|---|
 | _0 | GenesisValidator[] | undefined |
 
+### getListOfStakingTokens
+
+```solidity
+function getListOfStakingTokens() external view returns (address[])
+```
+
+returns list of tokens supported by this child chain.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
+
 ### getValidator
 
 ```solidity
@@ -71,6 +88,22 @@ returns validator instance based on provided address
 |---|---|---|
 | _0 | Validator | undefined |
 
+### onInit
+
+```solidity
+function onInit(uint256 id) external nonpayable
+```
+
+called when a new child chain is registered
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| id | uint256 | undefined |
+
 ### onL2StateReceive
 
 ```solidity
@@ -89,6 +122,23 @@ called by the exit helpers to either release the stake of a validator or slash i
 | sender | address | undefined |
 | data | bytes | undefined |
 
+### onStake
+
+```solidity
+function onStake(address validator, uint256 amount) external nonpayable
+```
+
+called when a validator stakes
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| amount | uint256 | undefined |
+
 ### register
 
 ```solidity
@@ -105,6 +155,28 @@ registers the public key of a validator
 |---|---|---|
 | signature | uint256[2] | undefined |
 | pubkey | uint256[4] | undefined |
+
+### stakingTokenSupported
+
+```solidity
+function stakingTokenSupported(address _token) external view returns (bool)
+```
+
+returns true if token is supported by this child chain.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _token | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
 
 ### whitelistValidators
 

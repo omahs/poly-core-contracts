@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import "./ISupernetManager.sol";
 import "../../../lib/GenesisLib.sol";
 
 struct Validator {
     uint256[4] blsKey;
-    uint256 stake;
+    uint256 unusedVariableStake; // This variable appears to be unused.
     bool isWhitelisted;
     bool isActive;
 }
@@ -16,7 +17,7 @@ struct Validator {
     @notice Manages validator access and syncs voting power between the stake manager and validator set on the child chain
     @dev Implements the base SupernetManager contract
  */
-interface ICustomSupernetManager {
+interface ICustomSupernetManager is ISupernetManager {
     event AddedToWhitelist(address indexed validator);
     event RemovedFromWhitelist(address indexed validator);
     event ValidatorRegistered(address indexed validator, uint256[4] blsKey);
@@ -55,4 +56,10 @@ interface ICustomSupernetManager {
 
     /// @notice returns validator instance based on provided address
     function getValidator(address validator_) external view returns (Validator memory);
+
+    /// @notice returns true if token is supported by this child chain.
+    function stakingTokenSupported(address _token) external view returns (bool);
+
+    /// @notice returns list of tokens supported by this child chain.
+    function getListOfStakingTokens() external view returns (address[] memory);
 }

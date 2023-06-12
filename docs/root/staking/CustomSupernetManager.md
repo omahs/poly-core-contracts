@@ -94,6 +94,23 @@ returns the genesis validator set with their balances
 |---|---|---|
 | _0 | GenesisValidator[] | undefined |
 
+### getListOfStakingTokens
+
+```solidity
+function getListOfStakingTokens() external view returns (address[])
+```
+
+returns list of tokens supported by this child chain.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
+
 ### getValidator
 
 ```solidity
@@ -268,6 +285,28 @@ function renounceOwnership() external nonpayable
 *Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.*
 
 
+### stakingTokenSupported
+
+```solidity
+function stakingTokenSupported(address _token) external view returns (bool)
+```
+
+returns true if token is supported by this child chain.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _token | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
 ### transferOwnership
 
 ```solidity
@@ -287,7 +326,7 @@ function transferOwnership(address newOwner) external nonpayable
 ### validators
 
 ```solidity
-function validators(address) external view returns (uint256 stake, bool isWhitelisted, bool isActive)
+function validators(address) external view returns (uint256 unusedVariableStake, bool isWhitelisted, bool isActive)
 ```
 
 
@@ -304,7 +343,7 @@ function validators(address) external view returns (uint256 stake, bool isWhitel
 
 | Name | Type | Description |
 |---|---|---|
-| stake | uint256 | undefined |
+| unusedVariableStake | uint256 | undefined |
 | isWhitelisted | bool | undefined |
 | isActive | bool | undefined |
 
